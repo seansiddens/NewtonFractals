@@ -15,9 +15,50 @@
 #define WIDTH    1000
 #define CHANNELS 3
 
+double clamp(double x, double min, double max) {
+    const double t = x < min ? min : x;
+    return t > max ? max : t;
+}
+
 typedef struct {
     uint8_t r, g, b;
 } Color;
+
+double colormap_red(double x) {
+    if (x < 0.7) {
+        return 4.0 * x - 1.5;
+    } else {
+        return -4.0 * x + 4.5;
+    }
+}
+
+double colormap_green(double x) {
+    if (x < 0.5) {
+        return 4.0 * x - 0.5;
+    } else {
+        return -4.0 * x + 3.5;
+    }
+}
+
+double colormap_blue(double x) {
+    if (x < 0.3) {
+       return 4.0 * x + 0.5;
+    } else {
+       return -4.0 * x + 2.5;
+    }
+}
+
+Color colormap_jet(double x) {
+    const double r = clamp(colormap_red(x), 0.0, 1.0);
+    const double g = clamp(colormap_blue(x), 0.0, 1.0);
+    const double b = clamp(colormap_green(x), 0.0, 1.0);
+
+    Color col;
+    col.r = (uint8_t)(r * 255.0); 
+    col.g = (uint8_t)(g * 255.0); 
+    col.b = (uint8_t)(b * 255.0); 
+    return col;
+}
 
 double complex function(double complex z) {
     double complex y;
@@ -48,6 +89,8 @@ int main(void) {
     Color reddish       = {0x9d, 0x02, 0x08};
     Color bright_yellow = {0xff, 0xba, 0x08};
     Color red           = {0xff, 0x00, 0x00};
+    Color green         = {0x00, 0xff, 0x00};
+    Color blue          = {0x00, 0x00, 0xff};
     Color white         = {0xff, 0xff, 0xff};
     Color black         = {0x00, 0x00, 0x00};
     Color magenta       = {0xff, 0x00, 0x6e};
@@ -57,6 +100,7 @@ int main(void) {
     Color heat[3] = {dark_blue, reddish, bright_yellow};
     Color card[3] = {red, white, black};
     Color cmyk[3] = {baby_blue, magenta, bright_yellow};
+    Color rgb[3]  = {red, green, blue};
 
     printf("Rendering image...\n");
     for (int i = 0; i < WIDTH * HEIGHT * CHANNELS; i += 3) {
@@ -91,15 +135,16 @@ int main(void) {
                 // If the current iteration is close enough to a root, color the pixel
                 if (cabs(difference) < ε) {
                     done = true;
-                    Color col = cmyk[j];
+                    Color col = rgb[j];
 
-                    double brightness = (iterations / (double)MAX_ITERATIONS);
-                    brightness *= 15.0;
-                    brightness = brightness > 1.0 ? 1.0 : brightness;
+                    double brightness = ((double)iterations / (double)MAX_ITERATIONS);
+                    brightness = brightness < 0.5 ? 0.5 : brightness;
+                    brightness = 1.0;
 
                     img[i] = (uint8_t)(col.r * brightness);
                     img[i+1] = (uint8_t)(col.g * brightness);
                     img[i+2] = (uint8_t)(col.b * brightness);
+
                 }
             }
             iterations++;
