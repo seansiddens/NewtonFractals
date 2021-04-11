@@ -8,7 +8,7 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image/stb_image_write.h"
 
-#define MAX_ITERATIONS 500
+#define MAX_ITERATIONS 255
 #define ROOTS          3
 
 #define HEIGHT   1000
@@ -60,16 +60,28 @@ Color colormap_jet(double x) {
     return col;
 }
 
-double complex function(double complex z) {
+double complex function(double complex z, int choice) {
     double complex y;
 
-    // f(z) = z^3 - 1
-    y = cpow(z, 3.0) - 1.0;
+    switch (choice) {
+        case 1:
+            // f(z) = z^3 - 1
+            y = cpow(z, 3.0) - 1.0;
+            break;
+        case 2:
+            // f(z) = cosh(z) - 1
+
+        default:
+            // f(z) = z^3 - 1
+            y = cpow(z, 3.0) - 1.0;
+            break;
+    }
+
 
     return y;
 }
 
-double complex derivative(double complex z) {
+double complex derivative(double complex z, int choice) {
     double complex y;
 
     // f'(z) = 3z^2
@@ -141,9 +153,6 @@ int main(void) {
                     brightness = brightness < 0.5 ? 0.5 : brightness;
                     brightness = 1.0;
 
-                    img[i] = (uint8_t)(col.r * brightness);
-                    img[i+1] = (uint8_t)(col.g * brightness);
-                    img[i+2] = (uint8_t)(col.b * brightness);
 
                 }
             }
@@ -154,8 +163,8 @@ int main(void) {
             img[i] = 0;
             img[i+1] = 0;
             img[i+2] = 0;
-
         }
+
 
     }
 
