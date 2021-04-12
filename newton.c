@@ -24,74 +24,24 @@ typedef struct {
     uint8_t r, g, b;
 } Color;
 
-double colormap_red(double x) {
-    if (x < 0.7) {
-        return 4.0 * x - 1.5;
-    } else {
-        return -4.0 * x + 4.5;
-    }
-}
-
-double colormap_green(double x) {
-    if (x < 0.5) {
-        return 4.0 * x - 0.5;
-    } else {
-        return -4.0 * x + 3.5;
-    }
-}
-
-double colormap_blue(double x) {
-    if (x < 0.3) {
-       return 4.0 * x + 0.5;
-    } else {
-       return -4.0 * x + 2.5;
-    }
-}
-
-Color colormap_jet(double x) {
-    const double r = clamp(colormap_red(x), 0.0, 1.0);
-    const double g = clamp(colormap_blue(x), 0.0, 1.0);
-    const double b = clamp(colormap_green(x), 0.0, 1.0);
-
-    Color col;
-    col.r = (uint8_t)(r * 255.0); 
-    col.g = (uint8_t)(g * 255.0); 
-    col.b = (uint8_t)(b * 255.0); 
-    return col;
-}
-
-double complex function(double complex z, int choice) {
-    double complex y;
-
-    switch (choice) {
-        case 1:
-            // f(z) = z^3 - 1
-            y = cpow(z, 3.0) - 1.0;
-            break;
-        case 2:
-            // f(z) = cosh(z) - 1
-
-        default:
-            // f(z) = z^3 - 1
-            y = cpow(z, 3.0) - 1.0;
-            break;
-    }
-
-
-    return y;
-}
-
-double complex derivative(double complex z, int choice) {
-    double complex y;
-
-    // f'(z) = 3z^2
-    y = 3.0 * z * z;
-
-    return y;
-}
-
 int main(void) {
     static unsigned char img[WIDTH * HEIGHT * CHANNELS] = {};
+
+    int choice, num_roots;
+    
+    choice = 1;
+    switch (choice) {
+        case 1:
+            num_roots = 3;
+            double complex roots[3] = { 1.0, 
+                                      -0.5 + (sqrt(3.0)/2.0)*I,
+                                      -0.5 - (sqrt(3.0)/2.0)*I };
+            break;
+        default:
+            printf("Invalid function choice!\n");
+            exit(1);
+            break;
+    }
 
     double complex roots[ROOTS] = { 1.0, 
                                     -0.5 + (sqrt(3.0) / 2.0) * I, 
@@ -112,7 +62,7 @@ int main(void) {
     Color heat[3] = {dark_blue, reddish, bright_yellow};
     Color card[3] = {red, white, black};
     Color cmyk[3] = {baby_blue, magenta, bright_yellow};
-    Color rgb[3]  = {red, green, blue};
+    uint32_t rgb[3]  = {0xff0000, 0x00ff00, 0x0000ff};
 
     printf("Rendering image...\n");
     for (int i = 0; i < WIDTH * HEIGHT * CHANNELS; i += 3) {
@@ -134,31 +84,45 @@ int main(void) {
         y -= 1.0;
         y *= -1.0;
 
-        double complex z = x + y * I;
+        double complex z = x + y*I;
 
         bool done = false; // Flag for determining when to exit loop    
         int iterations = 0;
         while (iterations < MAX_ITERATIONS && !done) {
+            // Choose an iteration function
+            switch (choice) {
+                case 1:
+                    // f(z) = z^3 - 1
+                    // f'(z) = 3z^2
+                    // f_n+1 = f_n - f(n) / f'(n)
+                    z = z - (cpow(z, 3.0)-1.0) / (3*cpow(z, 2.0));
+                    break;
+                default:
+                    printf("Invalid function choice!\n");
+                    exit(1);
+                    break;
+            }
+            
+            // Go through each root and check if iteration is close enough
             double ε = 1E-6;
-            z -= function(z) / derivative(z);
-
-            for (int j = 0; j < ROOTS; j++) {
+            for (int j = 0; j < num_roots; j++) {
+                // Get distance from current iteration to one of roots
                 double complex difference = z - roots[j];
                 // If the current iteration is close enough to a root, color the pixel
                 if (cabs(difference) < ε) {
-                    done = true;
-                    Color col = rgb[j];
+                    done = true; // We've converged to a root, so set flag to true
+                    uint32_t col = rgb[j];
 
-                    double brightness = ((double)iterations / (double)MAX_ITERATIONS);
-                    brightness = brightness < 0.5 ? 0.5 : brightness;
-                    brightness = 1.0;
-
-
+                    // Color image pixel with each channel of color
+                    img[i]   = (col >> 16) & 0xff; // Red channel
+                    img[i+1] = (col >>  8) & 0xff; // Blue channel
+                    img[i+2] = col & 0xff;         // Green channel
                 }
             }
             iterations++;
         }
-
+        
+        // If we didn't converge on anything, color pixel black
         if (!done) {
             img[i] = 0;
             img[i+1] = 0;
