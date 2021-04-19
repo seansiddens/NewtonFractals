@@ -11,22 +11,10 @@
 #define MAX_ITERATIONS 500
 #define ROOTS          3
 
-#define HEIGHT    1000
-#define WIDTH     1000
+#define HEIGHT    500
+#define WIDTH     500
 #define CHANNELS  3
 #define COMP_SIZE sizeof(double complex)
-
-double clamp(double x, double min, double max) {
-    const double t = x < min ? min : x;
-    return t > max ? max : t;
-}
-
-double smoothstep(double edge0, double edge1, double x) {
-    // Scale, bias, and saturate x to 0..1 range
-    x = clamp((x - edge0) / (edge1 - edge0), 0.0, 1.0);
-    // Evalutate polynomial
-    return x * x * (3.0 - 2.0 * x);
-}
 
 int main(void) {
     // Image buffer
@@ -39,7 +27,7 @@ int main(void) {
         exit(1);
     }
 
-    int num_roots; 
+    int num_roots;
     double complex *roots;
 
     int choice = 1; // Choice of function
@@ -58,15 +46,12 @@ int main(void) {
         exit(1);
         break;
     }
-    
+
     // Color palettes
-    uint32_t rgb[3]  = {0xff0000, 0x00ff00, 0x0000ff};
-    uint32_t heat[3] = {0x03071e, 0x9d0208, 0xffba08};
+    uint32_t rgb[3] = { 0xff0000, 0x00ff00, 0x0000ff };
+    uint32_t heat[3] = { 0x03071e, 0x9d0208, 0xffba08 };
 
     double scale_factor = 2.0;
-    int max_frames = 60;
-    double scale_step = 1.0 / max_frames;
-    
 
     int max_iter_count = 0;
     printf("Rendering image...\n");
@@ -135,10 +120,10 @@ int main(void) {
                     uint8_t b = col & 0xff; // Green channel
 
                     // Color image pixel with each channel of color
-                    double fract = (log(ε)-log(d0)) / (log(d1)-log(d0));
+                    double fract = (log(ε) - log(d0)) / (log(d1) - log(d0));
                     //double brightness = 1.0 - 0.5 * log((double)iterations+fract);
                     //double brightness = 1.0 - (log((double)iterations+fract+1.0) / log(50.0));
-                    double brightness = 50.0 / (pow(iterations+fract, 2.0) + 50.0);
+                    double brightness = 40.0 / (pow(iterations + fract, 2) + 40.0);
 
                     brightness = clamp(brightness, 0.0, 1.0);
                     img[i] = (uint8_t)(r * brightness);
@@ -148,7 +133,6 @@ int main(void) {
             }
             iterations++;
         }
-        
 
         // If we didn't converge on anything, color pixel black
         if (!done) {
