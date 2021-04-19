@@ -11,26 +11,20 @@
 #define MAX_ITERATIONS 500
 #define ROOTS          3
 
-#define HEIGHT    500
-#define WIDTH     500
+#define HEIGHT    2000
+#define WIDTH     2000
 #define CHANNELS  3
 #define COMP_SIZE sizeof(double complex)
 
-int main(void) {
-    // Image buffer
-    static unsigned char img[WIDTH * HEIGHT * CHANNELS] = {};
+double clamp(double x, double min, double max) {
+    const double t = x < min ? min : x;
+    return t > max ? max : t;
+}
 
-    // File for writing data to
-    FILE *fp = fopen("data.txt", "w");
-    if (fp == NULL) {
-        printf("data.txt file could not be opened/created!\n");
-        exit(1);
-    }
-
+void render(unsigned char *img, int choice) {
     int num_roots;
     double complex *roots;
 
-    int choice = 1; // Choice of function
     // Initialize roots array depending on choice of function
     switch (choice) {
     case 1:
@@ -51,9 +45,8 @@ int main(void) {
     uint32_t rgb[3] = { 0xff0000, 0x00ff00, 0x0000ff };
     uint32_t heat[3] = { 0x03071e, 0x9d0208, 0xffba08 };
 
-    double scale_factor = 2.0;
+    double scale_factor = 0.015625;
 
-    int max_iter_count = 0;
     printf("Rendering image...\n");
     for (int i = 0; i < WIDTH * HEIGHT * CHANNELS; i += 3) {
         double x = i % (WIDTH * CHANNELS) / CHANNELS;
@@ -80,11 +73,6 @@ int main(void) {
         bool done = false; // Flag for determining when to exit loop
         int iterations = 0;
         while (iterations < MAX_ITERATIONS && !done) {
-            // Keep track of max iteration
-            if (iterations > max_iter_count) {
-                max_iter_count = iterations;
-            }
-
             // Keep track of z value from previous iteration
             prev_z = z;
 
@@ -123,7 +111,7 @@ int main(void) {
                     double fract = (log(ε) - log(d0)) / (log(d1) - log(d0));
                     //double brightness = 1.0 - 0.5 * log((double)iterations+fract);
                     //double brightness = 1.0 - (log((double)iterations+fract+1.0) / log(50.0));
-                    double brightness = 40.0 / (pow(iterations + fract, 2) + 40.0);
+                    double brightness = 500.0 / (pow(iterations + fract, 2) + 500.0);
 
                     brightness = clamp(brightness, 0.0, 1.0);
                     img[i] = (uint8_t)(r * brightness);
@@ -141,6 +129,14 @@ int main(void) {
             img[i + 2] = 0;
         }
     }
+}
+
+int main(void) {
+    // Image buffer
+    static unsigned char img[WIDTH * HEIGHT * CHANNELS] = {};
+
+    render(img, 1);
+
 
     printf("Progress: 100.00%%");
     printf("\nDone!\n");
